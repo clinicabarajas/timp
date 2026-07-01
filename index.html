@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <meta name="description" content="Calculadora local de clasificación orientativa de timpanometría según Jerger. No almacena datos.">
+  <title>Clasificador de Timpanometría</title>
+
+  <style>
+    :root {
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #dbe3ec;
+      --background: #f6f8fb;
+      --card: #ffffff;
+      --od: #dc2626;
+      --oi: #2563eb;
+      --success: #15803d;
+      --warning: #9a3412;
+      --danger: #b91c1c;
+      --historic: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--background);
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(13, 148, 136, .10), transparent 34%),
+        var(--background);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: max(18px, env(safe-area-inset-top)) 16px max(26px, env(safe-area-inset-bottom));
+    }
+
+    .app-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .app-header h1 {
+      margin: 0;
+      color: var(--primary-dark);
+      font-size: clamp(1.35rem, 4vw, 2rem);
+      line-height: 1.1;
+    }
+
+    .app-header p {
+      max-width: 680px;
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: .92rem;
+      line-height: 1.45;
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: max-content;
+      padding: 9px 11px;
+      border: 1px solid #99f6e4;
+      border-radius: 999px;
+      background: #f0fdfa;
+      color: #115e59;
+      font-size: .78rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .privacy-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--success);
+    }
+
+    .notice {
+      margin-bottom: 16px;
+      padding: 11px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 11px;
+      background: #ffffffc9;
+      color: #475569;
+      font-size: .85rem;
+      line-height: 1.45;
+    }
+
+    .notice strong {
+      color: #1e293b;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tab {
+      min-height: 44px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: #475569;
+      cursor: pointer;
+      font-weight: 900;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+
+    .tab:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, .09);
+    }
+
+    .tab.od.active {
+      border-color: var(--od);
+      color: var(--od);
+      background: #fff7f7;
+    }
+
+    .tab.oi.active {
+      border-color: var(--oi);
+      color: var(--oi);
+      background: #f5f8ff;
+    }
+
+    .ear-panel {
+      display: none;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--card);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .07);
+    }
+
+    .ear-panel.active {
+      display: block;
+    }
+
+    .ear-panel.od {
+      border-top: 5px solid var(--od);
+    }
+
+    .ear-panel.oi {
+      border-top: 5px solid var(--oi);
+    }
+
+    .ear-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .ear-title-row h2 {
+      margin: 0;
+      font-size: 1.18rem;
+    }
+
+    .ear-panel.od h2 {
+      color: var(--od);
+    }
+
+    .ear-panel.oi h2 {
+      color: var(--oi);
+    }
+
+    .ear-title-row span {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 800;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      background: #fff;
+      color: var(--ink);
+      outline: 0;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, .14);
+    }
+
+    .flat-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 15px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--ink);
+      font-size: .85rem;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .flat-row input {
+      width: auto;
+      min-height: 0;
+      margin: 0;
+      accent-color: var(--primary);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      min-height: 43px;
+      padding: 10px 15px;
+      border: 0;
+      border-radius: 9px;
+      cursor: pointer;
+      font-weight: 900;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .12);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(300px, .88fr);
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .result-card,
+    .chart-card {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fbfdff;
+    }
+
+    .result-label {
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 900;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .result-type {
+      margin-top: 7px;
+      font-size: clamp(1.55rem, 5vw, 2.25rem);
+      font-weight: 950;
+      letter-spacing: -.04em;
+    }
+
+    .ear-panel.od .result-type {
+      color: var(--od);
+    }
+
+    .ear-panel.oi .result-type {
+      color: var(--oi);
+    }
+
+    .result-summary {
+      margin: 9px 0 0;
+      color: #475569;
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+
+    .result-warning {
+      margin-top: 10px;
+      color: var(--warning);
+      font-size: .8rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .chart-card {
+      padding: 9px;
+    }
+
+    .chart-card canvas {
+      display: block;
+      width: 100%;
+      height: 290px;
+    }
+
+    .help-card {
+      margin-top: 16px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+    }
+
+    .help-card h3 {
+      margin: 0 0 10px;
+      color: #334155;
+      font-size: .94rem;
+    }
+
+    .criteria {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .criterion {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: .77rem;
+      line-height: 1.4;
+    }
+
+    .criterion strong {
+      display: block;
+      margin-bottom: 3px;
+      color: #1e293b;
+      font-size: .82rem;
+    }
+
+    footer {
+      padding: 18px 4px 0;
+      color: var(--muted);
+      font-size: .74rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    @media (max-width: 800px) {
+      .app-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .privacy-badge {
+        align-self: flex-start;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .result-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .criteria {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 470px) {
+      .app {
+        padding-right: 11px;
+        padding-left: 11px;
+      }
+
+      .ear-panel {
+        padding: 14px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions .btn {
+        width: 100%;
+      }
+
+      .chart-card canvas {
+        height: 255px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="app-header">
+      <div>
+        <h1>Clasificador de timpanometría</h1>
+        <p>
+          Herramienta local para introducir valores, visualizar un timpanograma estimado
+          y obtener una clasificación orientativa de Jerger.
+        </p>
+      </div>
+
+      <div class="privacy-badge" title="No usa cookies, bases de datos ni almacenamiento local.">
+        <span class="privacy-dot"></span>
+        No guarda datos
+      </div>
+    </header>
+
+    <div class="notice">
+      <strong>Uso clínico orientativo.</strong> La clasificación se calcula a partir de los valores introducidos.
+      El gráfico no sustituye la traza original del equipo ni la interpretación clínica.
+    </div>
+
+    <nav class="tabs" aria-label="Seleccionar oído">
+      <button type="button" class="tab od active" data-ear="od" aria-selected="true">Oído derecho</button>
+      <button type="button" class="tab oi" data-ear="oi" aria-selected="false">Oído izquierdo</button>
+    </nav>
+
+    <section id="panel-od" class="ear-panel od active" aria-labelledby="title-od">
+      <div class="ear-title-row">
+        <h2 id="title-od">Oído derecho</h2>
+        <span>Rojo</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="od-frequency">Frecuencia de sonda</label>
+          <select id="od-frequency">
+            <option value="226 Hz" selected>226 Hz</option>
+            <option value="1 kHz">1 kHz</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="od-volume">Volumen (ml)</label>
+          <input id="od-volume" type="text" inputmode="decimal" placeholder="Ej.: 1,00">
+        </div>
+
+        <div class="field">
+          <label for="od-pressure">Presión de pico (daPa)</label>
+          <input id="od-pressure" type="text" inputmode="decimal" placeholder="Ej.: -25">
+        </div>
+
+        <div class="field">
+          <label for="od-compliance">Compliancia (mmho)</label>
+          <input id="od-compliance" type="text" inputmode="decimal" placeholder="Ej.: 0,85">
+        </div>
+
+        <div class="field">
+          <label for="od-gradient">Gradiente (daPa)</label>
+          <input id="od-gradient" type="text" inputmode="decimal" placeholder="Ej.: 90">
+        </div>
+      </div>
+
+      <label class="flat-row">
+        <input id="od-flat" type="checkbox">
+        Curva plana o sin pico medible (clasificar como Tipo B)
+      </label>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" onclick="classifyEar('od')">Obtener clasificación</button>
+        <button type="button" class="btn btn-secondary" onclick="clearEar('od')">Limpiar OD</button>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="result-label">Clasificación</div>
+          <div id="od-type" class="result-type">Pendiente</div>
+          <p id="od-summary" class="result-summary">Introduce los valores y pulsa “Obtener clasificación”.</p>
+          <p id="od-warning" class="result-warning"></p>
+        </div>
+
+        <div class="chart-card">
+          <canvas id="od-chart" aria-label="Timpanograma estimado de oído derecho"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-oi" class="ear-panel oi" aria-labelledby="title-oi">
+      <div class="ear-title-row">
+        <h2 id="title-oi">Oído izquierdo</h2>
+        <span>Azul</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="oi-frequency">Frecuencia de sonda</label>
+          <select id="oi-frequency">
+            <option value="226 Hz" selected>226 Hz</option>
+            <option value="1 kHz">1 kHz</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="oi-volume">Volumen (ml)</label>
+          <input id="oi-volume" type="text" inputmode="decimal" placeholder="Ej.: 1,00">
+        </div>
+
+        <div class="field">
+          <label for="oi-pressure">Presión de pico (daPa)</label>
+          <input id="oi-pressure" type="text" inputmode="decimal" placeholder="Ej.: -25">
+        </div>
+
+        <div class="field">
+          <label for="oi-compliance">Compliancia (mmho)</label>
+          <input id="oi-compliance" type="text" inputmode="decimal" placeholder="Ej.: 0,85">
+        </div>
+
+        <div class="field">
+          <label for="oi-gradient">Gradiente (daPa)</label>
+          <input id="oi-gradient" type="text" inputmode="decimal" placeholder="Ej.: 90">
+        </div>
+      </div>
+
+      <label class="flat-row">
+        <input id="oi-flat" type="checkbox">
+        Curva plana o sin pico medible (clasificar como Tipo B)
+      </label>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" onclick="classifyEar('oi')">Obtener clasificación</button>
+        <button type="button" class="btn btn-secondary" onclick="clearEar('oi')">Limpiar OI</button>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="result-label">Clasificación</div>
+          <div id="oi-type" class="result-type">Pendiente</div>
+          <p id="oi-summary" class="result-summary">Introduce los valores y pulsa “Obtener clasificación”.</p>
+          <p id="oi-warning" class="result-warning"></p>
+        </div>
+
+        <div class="chart-card">
+          <canvas id="oi-chart" aria-label="Timpanograma estimado de oído izquierdo"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="help-card">
+      <h3>Criterios configurados para 226 Hz</h3>
+      <div class="criteria">
+        <article class="criterion">
+          <strong>Tipo A</strong>
+          Presión entre −100 y +50 daPa y compliancia entre 0,3 y 1,6 mmho.
+        </article>
+        <article class="criterion">
+          <strong>Tipo As / Ad</strong>
+          Presión dentro de rango con compliancia menor de 0,3 mmho o mayor de 1,6 mmho.
+        </article>
+        <article class="criterion">
+          <strong>Tipo B / C</strong>
+          Tipo B cuando se marca curva plana. Tipo C con presión de pico ≤ −100 daPa.
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      Clasificador de timpanometría · Funcionamiento local en el navegador · Sin envío, historial ni almacenamiento de datos.
+    </footer>
+  </main>
+
+  <script>
+    const EARS = {
+      od: { label: 'OD', color: '#dc2626' },
+      oi: { label: 'OI', color: '#2563eb' }
+    };
+
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', () => setActiveEar(tab.dataset.ear));
+    });
+
+    window.addEventListener('resize', () => {
+      drawChart('od', getEarData('od'), document.getElementById('od-type').textContent);
+      drawChart('oi', getEarData('oi'), document.getElementById('oi-type').textContent);
+    });
+
+    ['od', 'oi'].forEach((ear) => {
+      ['frequency', 'volume', 'pressure', 'compliance', 'gradient', 'flat'].forEach((field) => {
+        const element = document.getElementById(`${ear}-${field}`);
+        element.addEventListener('input', () => resetResult(ear));
+        element.addEventListener('change', () => resetResult(ear));
+      });
+
+      drawChart(ear, getEarData(ear), 'Pendiente');
+    });
+
+    function setActiveEar(ear) {
+      document.querySelectorAll('.tab').forEach((tab) => {
+        const active = tab.dataset.ear === ear;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+      });
+
+      document.querySelectorAll('.ear-panel').forEach((panel) => {
+        panel.classList.toggle('active', panel.id === `panel-${ear}`);
+      });
+
+      requestAnimationFrame(() => {
+        drawChart(ear, getEarData(ear), document.getElementById(`${ear}-type`).textContent);
+      });
+    }
+
+    function readNumber(id) {
+      const text = String(document.getElementById(id).value || '')
+        .trim()
+        .replace(/\s+/g, '')
+        .replace(',', '.');
+
+      if (!text) return null;
+
+      const number = Number(text);
+      return Number.isFinite(number) ? number : null;
+    }
+
+    function getEarData(ear) {
+      return {
+        frequency: document.getElementById(`${ear}-frequency`).value,
+        volume: readNumber(`${ear}-volume`),
+        pressure: readNumber(`${ear}-pressure`),
+        compliance: readNumber(`${ear}-compliance`),
+        gradient: readNumber(`${ear}-gradient`),
+        flat: document.getElementById(`${ear}-flat`).checked
+      };
+    }
+
+    function resetResult(ear) {
+      const type = document.getElementById(`${ear}-type`);
+      const summary = document.getElementById(`${ear}-summary`);
+      const warning = document.getElementById(`${ear}-warning`);
+
+      type.textContent = 'Pendiente';
+      summary.textContent = 'Introduce los valores y pulsa “Obtener clasificación”.';
+      warning.textContent = '';
+      drawChart(ear, getEarData(ear), 'Pendiente');
+    }
+
+    function classifyEar(ear) {
+      const data = getEarData(ear);
+      const result = classifyJerger(data);
+
+      const type = document.getElementById(`${ear}-type`);
+      const summary = document.getElementById(`${ear}-summary`);
+      const warning = document.getElementById(`${ear}-warning`);
+
+      if (!result.ok) {
+        type.textContent = 'Revisar datos';
+        summary.textContent = result.message;
+        warning.textContent = '';
+        drawChart(ear, data, 'Pendiente');
+        return;
+      }
+
+      type.textContent = result.type;
+      summary.textContent = result.summary;
+      warning.textContent = result.warning || '';
+      drawChart(ear, data, result.type);
+    }
+
+    function classifyJerger(data) {
+      if (data.flat) {
+        return {
+          ok: true,
+          type: 'Tímpano B',
+          summary: 'Curva plana o sin pico medible marcada por el usuario.',
+          warning: 'Interpreta el volumen del conducto junto con la traza original.'
+        };
+      }
+
+      if (data.pressure === null || data.compliance === null || data.gradient === null) {
+        return {
+          ok: false,
+          message: 'Introduce presión, compliancia y gradiente; o marca “Curva plana” para un Tipo B.'
+        };
+      }
+
+      let type = 'Tímpano A';
+      let summary = 'Pico dentro del intervalo de presión y compliancia configurado.';
+      let warning = '';
+
+      if (data.pressure <= -100) {
+        type = 'Tímpano C';
+        summary = `Pico de presión negativa: ${formatNumber(data.pressure)} daPa.`;
+      } else if (data.compliance < 0.3) {
+        type = 'Tímpano As';
+        summary = `Pico de baja compliancia: ${formatNumber(data.compliance)} mmho.`;
+      } else if (data.compliance > 1.6) {
+        type = 'Tímpano Ad';
+        summary = `Pico de alta compliancia: ${formatNumber(data.compliance)} mmho.`;
+      } else if (data.pressure > 50) {
+        type = 'Tímpano A';
+        summary = `Pico con presión positiva: ${formatNumber(data.pressure)} daPa.`;
+      }
+
+      if (data.frequency !== '226 Hz') {
+        warning = 'La clasificación se muestra de forma orientativa. Revisa manualmente la interpretación cuando uses sonda de 1 kHz.';
+      }
+
+      return { ok: true, type, summary, warning };
+    }
+
+    function clearEar(ear) {
+      ['volume', 'pressure', 'compliance', 'gradient'].forEach((field) => {
+        document.getElementById(`${ear}-${field}`).value = '';
+      });
+
+      document.getElementById(`${ear}-frequency`).value = '226 Hz';
+      document.getElementById(`${ear}-flat`).checked = false;
+      resetResult(ear);
+    }
+
+    function formatNumber(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return '--';
+
+      return Number.isInteger(number)
+        ? String(number)
+        : number.toFixed(2).replace('.', ',');
+    }
+
+    function drawChart(ear, data, type) {
+      const canvas = document.getElementById(`${ear}-chart`);
+      const context = canvas.getContext('2d');
+      const ratio = window.devicePixelRatio || 1;
+
+      const cssWidth = Math.max(280, Math.floor(canvas.clientWidth || 360));
+      const cssHeight = Math.max(250, Math.floor(canvas.clientHeight || 290));
+
+      canvas.width = cssWidth * ratio;
+      canvas.height = cssHeight * ratio;
+      canvas.style.width = `${cssWidth}px`;
+      canvas.style.height = `${cssHeight}px`;
+
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.clearRect(0, 0, cssWidth, cssHeight);
+
+      const margin = { left: 40, right: 52, top: 30, bottom: 58 };
+      const area = {
+        x: margin.left,
+        y: margin.top,
+        width: cssWidth - margin.left - margin.right,
+        height: cssHeight - margin.top - margin.bottom
+      };
+
+      const xMin = -600;
+      const xMax = 300;
+      const yMax = 3;
+      const color = EARS[ear].color;
+
+      const x = (value) => area.x + ((value - xMin) / (xMax - xMin)) * area.width;
+      const y = (value) => area.y + area.height - (value / yMax) * area.height;
+
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, cssWidth, cssHeight);
+
+      context.strokeStyle = '#d9d9d9';
+      context.lineWidth = 1;
+      context.font = '10px Arial';
+      context.fillStyle = '#334155';
+
+      [0, 1, 2, 3].forEach((value) => {
+        const py = y(value);
+        context.beginPath();
+        context.moveTo(area.x, py);
+        context.lineTo(area.x + area.width, py);
+        context.stroke();
+
+        context.textAlign = 'right';
+        context.textBaseline = 'middle';
+        context.fillText(String(value), area.x - 6, py);
+
+        context.textAlign = 'left';
+        context.fillText(String(value), area.x + area.width + 7, py);
+      });
+
+      [-600, -300, 0, 300].forEach((value) => {
+        const px = x(value);
+        context.beginPath();
+        context.moveTo(px, area.y);
+        context.lineTo(px, area.y + area.height);
+        context.stroke();
+      });
+
+      context.strokeStyle = '#111827';
+      context.lineWidth = 1.15;
+      context.beginPath();
+      context.moveTo(x(0), area.y);
+      context.lineTo(x(0), area.y + area.height);
+      context.moveTo(area.x, area.y + area.height);
+      context.lineTo(area.x + area.width, area.y + area.height);
+      context.stroke();
+
+      // Zona Tipo A orientativa, sonda de 226 Hz.
+      context.save();
+      context.strokeStyle = '#475569';
+      context.lineWidth = 1;
+      context.setLineDash([5, 4]);
+      context.strokeRect(
+        x(-100),
+        y(1.6),
+        x(50) - x(-100),
+        y(0.3) - y(1.6)
+      );
+      context.restore();
+
+      context.fillStyle = color;
+      context.font = 'bold 12px Arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'top';
+      context.fillText(
+        `${EARS[ear].label} · ${type === 'Pendiente' ? 'Timpanograma' : type}`,
+        cssWidth / 2,
+        5
+      );
+
+      context.fillStyle = '#475569';
+      context.font = '10px Arial';
+      context.textBaseline = 'alphabetic';
+      context.fillText('-600', x(-600), area.y + area.height + 18);
+      context.fillText('-300', x(-300), area.y + area.height + 18);
+      context.fillText('+300', x(300), area.y + area.height + 18);
+
+      const volume = data.volume === null ? 0 : Math.max(0, data.volume);
+      const pressure = data.pressure === null ? -80 : data.pressure;
+      const compliance = data.compliance === null ? 0.12 : Math.max(0.02, data.compliance);
+      const gradient = data.gradient === null ? 100 : Math.max(20, Math.min(300, data.gradient));
+
+      context.strokeStyle = color;
+      context.lineWidth = 2.2;
+      context.beginPath();
+
+      if (type === 'Tímpano B' || data.flat) {
+        const flatLevel = 0.07;
+        for (let p = xMin; p <= xMax; p += 5) {
+          const value = Math.max(0.02, flatLevel + 0.005 * Math.sin(p / 35));
+          if (p === xMin) {
+            context.moveTo(x(p), y(value));
+          } else {
+            context.lineTo(x(p), y(value));
+          }
+        }
+      } else {
+        const base = Math.min(0.12, Math.max(0.03, compliance * 0.1));
+        const amplitude = Math.max(0.02, compliance - base);
+        const sigma = Math.max(18, Math.min(120, gradient / 2.2));
+
+        for (let p = xMin; p <= xMax; p += 4) {
+          const value = Math.max(
+            0,
+            Math.min(
+              yMax,
+              base + amplitude * Math.exp(-0.5 * Math.pow((p - pressure) / sigma, 2))
+            )
+          );
+
+          if (p === xMin) {
+            context.moveTo(x(p), y(value));
+          } else {
+            context.lineTo(x(p), y(value));
+          }
+        }
+      }
+
+      context.stroke();
+
+      // Barra lateral: volumen del conducto, fijada a 0–3 ml.
+      const barX = area.x + area.width - 12;
+      const barWidth = 12;
+      const barY = y(Math.min(volume, yMax));
+      const barHeight = y(0) - barY;
+      context.fillStyle = color;
+      context.fillRect(barX, barY, barWidth, barHeight);
+
+      if (type !== 'Tímpano B' && data.pressure !== null && data.compliance !== null) {
+        context.setLineDash([4, 3]);
+        context.strokeStyle = color;
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(x(pressure), y(0));
+        context.lineTo(x(pressure), y(Math.min(compliance, yMax)));
+        context.stroke();
+        context.setLineDash([]);
+
+        context.fillStyle = color;
+        context.beginPath();
+        context.arc(x(pressure), y(Math.min(compliance, yMax)), 3.8, 0, Math.PI * 2);
+        context.fill();
+      }
+
+      context.fillStyle = '#334155';
+      context.font = '10px Arial';
+      context.textAlign = 'left';
+      context.textBaseline = 'alphabetic';
+      context.fillText(`Vol: ${formatNumber(volume)} ml`, 16, cssHeight - 10);
+      context.fillText(`Pres: ${formatNumber(pressure)} daPa`, cssWidth / 2 - 8, cssHeight - 10);
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js');
+      });
+    }
+  </script>
+</body>
+</html>
