@@ -401,6 +401,15 @@
       text-align: center;
     }
 
+    .footer-classification {
+      margin-bottom: 10px;
+    }
+
+    .footer-copyright {
+      color: #475569;
+      font-weight: 700;
+    }
+
     @media (max-width: 800px) {
       .app-header {
         align-items: stretch;
@@ -453,16 +462,8 @@
   <main class="app">
     <header class="app-header">
       <div>
-        <h1>Clasificador de timpanometría</h1>
-        <p>
-          Herramienta local para introducir valores, visualizar un timpanograma estimado
-          y obtener una clasificación orientativa de Jerger.
-        </p>
-      </div>
-
-      <div class="privacy-badge" title="No usa cookies, bases de datos ni almacenamiento local.">
-        <span class="privacy-dot"></span>
-        No guarda datos
+        <h1>Timpanometría</h1>
+        <p>Clasificación de Jerger</p>
       </div>
     </header>
 
@@ -479,7 +480,6 @@
     <section id="panel-od" class="ear-panel od active" aria-labelledby="title-od">
       <div class="ear-title-row">
         <h2 id="title-od">Oído derecho</h2>
-        <span>Rojo</span>
       </div>
 
       <div class="form-grid">
@@ -539,7 +539,6 @@
     <section id="panel-oi" class="ear-panel oi" aria-labelledby="title-oi">
       <div class="ear-title-row">
         <h2 id="title-oi">Oído izquierdo</h2>
-        <span>Azul</span>
       </div>
 
       <div class="form-grid">
@@ -615,7 +614,13 @@
     </section>
 
     <footer>
-      Clasificador de timpanometría · Funcionamiento local en el navegador · Sin envío, historial ni almacenamiento de datos.
+      <div class="footer-classification">
+        Clasificación morfológica: Tipo A, B o C según Jerger.<br>
+        Subtipos As y Ad: clasificación clínica operativa basada en la altura del pico.
+      </div>
+      <div class="footer-copyright">
+        © 2026 Zenker. Todos los derechos reservados.
+      </div>
     </footer>
   </main>
 
